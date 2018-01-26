@@ -6,7 +6,7 @@ require 'headless'
 require 'netrc'
 require 'pp'
 
-DEFAULT_SLEEP = 5
+DEFAULT_SLEEP = 1
 
 def login(browser)
   email, password = Netrc.read()['amazon.com']
@@ -42,17 +42,31 @@ def empty_trash(browser)
   browser.button(class: 'select-all').wait_until_present
   puts "Got Trash page"
   sleep(DEFAULT_SLEEP)
-  browser.button(class: 'select-all', title: "Select").click
-  print "Clicked 'Select All', please wait..."
-  # browser.span(class: 'icon-spinner').wait_until_present
+  puts "Sorting by size"
+  size_button = browser.button(css: 'span.detail.Size > button.sort')
+  # $stderr.puts size_button.inspect
+  size_button.click!
   sleep(DEFAULT_SLEEP)
-  begin
-    browser.span(class: 'icon-spinner').wait_while_present
-  rescue Watir::Wait::TimeoutError => e
+  # browser.button(class: 'select-all', title: "Select").click
+  print "Clicking 'Select' buttons, please wait..."
+  # Watir.relaxed_locate = true
+  # Watir.logger.level = :debug
+  # Selenium::WebDriver.logger.level = :info
+  browser.buttons(class: 'select-item', title: "Select").each do |select_button|
+    # $stderr.puts select_button.inspect
+    select_button.click!
+    # browser.span(class: 'icon-spinner').wait_until_present
+    # sleep(DEFAULT_SLEEP)
+    begin
+      browser.span(class: 'icon-spinner').wait_while_present
+    rescue Watir::Wait::TimeoutError => e
+      print "."
+      retry
+    end
     print "."
-    retry
   end
   puts "done"
+  # Watir.relaxed_locate = false
   browser.button(class: 'delete').wait_until_present
   puts "Clicking delete button"
   browser.button(class: 'delete').click
