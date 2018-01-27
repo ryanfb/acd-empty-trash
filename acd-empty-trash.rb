@@ -6,7 +6,7 @@ require 'headless'
 require 'netrc'
 require 'pp'
 
-DEFAULT_SLEEP = 1
+DEFAULT_SLEEP = 5
 
 def login(browser)
   email, password = Netrc.read()['amazon.com']
@@ -90,7 +90,13 @@ browser = Watir::Browser.new
 
 if login(browser)
   while trash_count(browser) > 0
-    empty_trash(browser)
+    begin
+      empty_trash(browser)
+    rescue Exception => e
+      $stderr.puts e.inspect
+      sleep(DEFAULT_SLEEP)
+      retry
+    end
   end
 else
   puts "Login failure"
