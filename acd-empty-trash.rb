@@ -37,24 +37,20 @@ def trash_count(browser)
   return count
 end
 
-def empty_trash(browser)
+def empty_trash(browser, select_all)
   browser.goto('https://www.amazon.com/clouddrive/trash')
   browser.button(class: 'select-all').wait_until_present
   puts "Got Trash page"
   sleep(DEFAULT_SLEEP)
+
   puts "Sorting by size"
   size_button = browser.button(css: 'span.detail.Size > button.sort')
-  # $stderr.puts size_button.inspect
   size_button.click!
   sleep(DEFAULT_SLEEP)
-  # browser.button(class: 'select-all', title: "Select").click
-  print "Clicking 'Select' buttons, please wait..."
-  # Watir.relaxed_locate = true
-  # Watir.logger.level = :debug
-  # Selenium::WebDriver.logger.level = :info
-  browser.buttons(class: 'select-item', title: "Select").each do |select_button|
-    # $stderr.puts select_button.inspect
-    select_button.click!
+
+  if select_all
+    print "Clicking 'Select All' button, please wait..."
+    browser.button(class: 'select-all', title: "Select").click
     # browser.span(class: 'icon-spinner').wait_until_present
     # sleep(DEFAULT_SLEEP)
     begin
@@ -63,7 +59,22 @@ def empty_trash(browser)
       print "."
       retry
     end
-    print "."
+  else
+    print "Clicking 'Select' buttons, please wait..."
+    # Watir.relaxed_locate = true
+    # Watir.logger.level = :debug
+    # Selenium::WebDriver.logger.level = :info
+    browser.buttons(class: 'select-item', title: "Select").each do |select_button|
+      # $stderr.puts select_button.inspect
+      select_button.click!
+      begin
+        browser.span(class: 'icon-spinner').wait_while_present
+      rescue Watir::Wait::TimeoutError => e
+        print "."
+        retry
+      end
+      print "."
+    end
   end
   puts "done"
   # Watir.relaxed_locate = false
@@ -87,13 +98,15 @@ headless = Headless.new
 headless.start
 
 browser = Watir::Browser.new
+select_all = true
 
 if login(browser)
   while trash_count(browser) > 0
     begin
-      empty_trash(browser)
+      empty_trash(browser, select_all)
     rescue Exception => e
       $stderr.puts e.inspect
+      select_all = false
       sleep(DEFAULT_SLEEP)
       retry
     end
